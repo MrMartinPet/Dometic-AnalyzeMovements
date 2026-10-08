@@ -1,36 +1,100 @@
-const {JSDOM,VirtualConsole}=require('jsdom');
-const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const root=path.resolve(__dirname,'..');
-const source=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const code=source.replace('</script>',`window.qa={get project(){return project},set project(v){project=v},get lang(){return lang},get mode(){return mode},get translations(){return translations},legs,segments,totals,elapsed,validate,render,save,chooseLanguage,referenceClick,addVisit,hitPosition,clearObservation};</script>`);
-let clock=Date.parse('2026-10-07T12:00:00Z');
-function boot(saved){const errors=[];const vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e));const dom=new JSDOM(code,{url:'https://mrmartinpet.github.io/Dometic-AnalyzeMovements/?lang=sv',runScripts:'dangerously',virtualConsole:vc,beforeParse(w){w.Date.now=()=>clock;w.confirm=()=>true;w.print=()=>w.didPrint=true;w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};w.setInterval=()=>0;w.setTimeout=()=>0;if(saved)w.localStorage.setItem('dometic-movements',saved)}});assert.deepEqual(errors,[]);return dom}
-let dom=boot(),w=dom.window,d=w.document,q=w.qa;
-function click(id){d.getElementById(id).click()}
-function val(id,v){d.getElementById(id).value=v;d.getElementById(id).dispatchEvent(new w.Event('input',{bubbles:true}));d.getElementById(id).dispatchEvent(new w.Event('change',{bubbles:true}))}
-function logInput(kind,v){let e=d.querySelector(`[data-value="${kind}"]`);e.value=v;e.dispatchEvent(new w.Event('change',{bubbles:true}));return e}
-function setTwo(){q.project.positions=[{id:'A',name:'A',x:.1,y:.1},{id:'B',name:'B',x:.4,y:.5}];q.project.workstation='Cell';q.project.metresPerUnit=.01;q.render()}
-assert.equal(d.getElementById('languageScreen').hidden,true);
-click('start');assert.match(d.getElementById('message').textContent,/minst två/);
-click('demo');assert.equal(q.project.positions.length,5);assert.equal(q.project.metresPerUnit,.01);
-click('reset');setTwo();click('start');assert.equal(q.project.session.status,'running');
-q.hitPosition('A');q.hitPosition('B');let legs=q.legs();assert.equal(legs.length,1);assert(Math.abs(legs[0].distance-Math.hypot(3,2.4))<1e-10);assert.equal(d.getElementById('totalMoves').textContent,'1');
-q.hitPosition('B');assert.equal(q.legs().length,1,'duplicate taps ignored');
-clock+=5000;click('pause');assert.equal(q.elapsed(),5000);clock+=60000;assert.equal(q.elapsed(),5000);
-click('start');clock+=3000;assert.equal(q.elapsed(),8000);click('nextCycle');assert.equal(q.project.completed.length,1);assert.equal(q.project.cycle,2);assert.equal(q.legs().length,1);
-q.hitPosition('A');assert.equal(q.legs().length,2);assert.equal(q.project.visits.at(-1).cycle,2);click('stop');assert.equal(q.project.completed.length,2);assert.equal(q.project.session.status,'done');assert.equal(q.elapsed(),8000);assert(Math.abs(q.totals(q.legs()).distance-2*Math.hypot(3,2.4))<1e-10);assert.equal(d.getElementById('averageDistance').textContent,'3,84 m');
-logInput('actual','5,5');assert.equal(q.legs()[0].distance,5.5);assert.equal(q.legs()[0].steps,5.5/.75);logInput('steps','10');assert.equal(q.legs()[0].steps,10);logInput('actual','0');assert.equal(q.legs()[0].distance,0);assert.equal(q.legs()[0].steps,10,'counted steps independent of distance');
-let invalid=logInput('steps','1.5');assert.equal(invalid.getAttribute('aria-invalid'),'true');click('print');assert(!w.didPrint);logInput('steps','0');assert.equal(q.legs()[0].steps,0);logInput('actual','');assert(Math.abs(q.legs()[0].distance-Math.hypot(3,2.4))<1e-10);logInput('steps','');assert.equal(q.legs()[0].steps,q.legs()[0].distance/.75);
-const saved=w.localStorage.getItem('dometic-movements');dom=boot(saved);w=dom.window;d=w.document;q=w.qa;assert.equal(q.project.completed.length,2);assert.equal(q.elapsed(),8000);
-click('clearRoute');assert.equal(q.project.positions.length,2);click('start');q.hitPosition('A');q.addVisit({x:.4,y:.1,position:null,bend:1});q.render();assert.equal(q.legs().length,0);assert.equal(q.segments().length,1);click('stop');assert.equal(q.project.session.status,'running','cannot finish at a bend');q.hitPosition('B');assert.equal(q.legs().length,1);assert.equal(q.segments().length,2);assert(Math.abs(q.legs()[0].distance-5.4)<1e-10,'aisle bends counted in path, one movement');click('undo');assert.equal(q.legs().length,0);assert.equal(q.segments().length,1);click('undo');assert.equal(q.segments().length,0);q.hitPosition('B');click('nextCycle');click('stop');assert.equal(q.project.completed.length,1,'empty trailing cycle not completed');
-click('clearRoute');q.referenceClick({x:.1,y:.1});d.getElementById('referenceLength').value='2';q.referenceClick({x:.3,y:.1});assert(Math.abs(q.project.metresPerUnit-.01)<1e-12);
-val('width','12');val('height','6');click('applyScale');assert.equal(q.project.height,500);assert.equal(q.project.metresPerUnit,.012);
-q.project.metresPerUnit=null;click('start');q.hitPosition('A');q.hitPosition('B');assert.equal(q.legs()[0].distance,null);logInput('steps','7');assert.equal(d.getElementById('totalSteps').textContent,'7');logInput('actual','3');assert.equal(d.getElementById('totalDistance').textContent,'3 m');assert.equal(q.legs()[0].steps,7);
-val('stride','0');assert.equal(d.getElementById('stride').getAttribute('aria-invalid'),'true');val('stride','0,8');assert.equal(q.project.stride,.8);
-// Translation coverage and exports
-for(const l of ['sv','en','de']){assert.deepEqual(Object.keys(q.translations[l]).sort(),Object.keys(q.translations.en).sort());q.chooseLanguage(l);assert.equal(d.documentElement.lang,l);assert(!Array.from(d.querySelectorAll('[data-t]')).some(e=>e.textContent===e.dataset.t));assert.equal(d.querySelectorAll('#board marker').length,7);let exports=[];w.download=(...args)=>exports.push(args);click('csv');assert.equal(exports.length,1);assert(exports[0][0].startsWith('\ufeffsep=;'));assert(exports[0][0].includes(q.translations[l].workstation));click('saveProject');assert.equal(JSON.parse(exports.at(-1)[0]).session.status,'paused');assert.equal(JSON.parse(exports.at(-1)[0]).session.start,null);click('svgExport');assert(exports.at(-1)[0].includes('http://www.w3.org/2000/svg'));click('print');assert(w.didPrint)}
-// Import bounds, HTML and CSV escaping
-const p=JSON.parse(JSON.stringify(q.project));assert(q.validate(p));for(const mutate of [p=>p.image='https://attacker.test/image.svg',p=>p.metresPerUnit=-1,p=>p.stride=0,p=>p.positions[0].x=2,p=>p.visits[0].position='unknown',p=>p.positions.push({...p.positions[0]}),p=>p.session.start=Date.now()+1e10]){const copy=JSON.parse(JSON.stringify(p));mutate(copy);assert.throws(()=>q.validate(copy))}
-q.project.workstation='=HYPERLINK("example")';q.project.positions[0].name='<img src=x onerror=alert(1)>';q.render();assert.equal(d.querySelectorAll('#stations img').length,0);let out=[];w.download=(...args)=>out.push(args);click('csv');assert(out[0][0].includes("'=HYPERLINK"));
-console.log('PASS: movement and bend distances, cycle averages, counted-step overrides, timers, calibration, persistence, validation, all translations, PDF/CSV/SVG/JSON export paths and escaping.');
-dom.window.close();
+// Run with a local server at localhost:8076 and Playwright available in NODE_PATH.
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..'),out=process.env.QA_OUTPUT||path.join(root,'../qa');
+const libs=process.env.QA_LIBS||path.join(root,'../references');
+const url=process.env.APP_URL||'http://localhost:8076/';
+(async()=>{
+ fs.mkdirSync(out,{recursive:true});
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
+ const page=await browser.newPage({viewport:{width:1440,height:1050}}),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
+ for(const name of ['xlsx.full.min.js','jspdf.umd.min.js'])if(fs.existsSync(path.join(libs,name)))await page.route('**/'+name,r=>r.fulfill({path:path.join(libs,name),contentType:'text/javascript'}));
+ await page.goto(url+'?lang=sv');await page.waitForFunction(()=>typeof summary==='function');
+ assert.deepEqual(errors,[],'boot');assert.equal(await page.locator('#nextCycle').count(),0);
+ // Import the exact Moment-timer source when available, then verify the canonical format separately.
+ const real=process.env.STEP_FILE;
+ if(real){await page.locator('#positionsFile').setInputFiles(real);await page.waitForFunction(()=>project.positions.length>0);assert(await page.evaluate(()=>project.positions.every(p=>p.x===null&&p.y===null)));}
+ const spreadsheet=await page.evaluate(()=>{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Steg','Moment'],[2,'Kontroll'],[1,'Material']]),'Tabell1');return Array.from(new Uint8Array(XLSX.write(wb,{type:'array',bookType:'xlsx'})))});
+ await page.locator('#positionsFile').setInputFiles({name:'Gemensam.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(spreadsheet)});
+ await page.waitForFunction(()=>project.positions.length===2);
+ assert.deepEqual(await page.evaluate(()=>project.positions.map(p=>[p.name,p.x,p.y])),[['Material',null,null],['Kontroll',null,null]]);
+ assert.equal(await page.locator('#board .node').count(),0);
+ await page.locator('[data-name]').first().fill('Inmatning');
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('dometic-movements')).positions[0].name),'Inmatning');
+ await page.locator('#workstation').fill('Limhjul 1');await page.locator('#observer').fill('Testobservatör');
+ await page.locator('#start').click();assert.equal(await page.evaluate(()=>project.session.status),'idle');
+ // Real mouse drag from tray to SVG, then move directly without selecting a move mode.
+ await page.evaluate(()=>scrollTo(0,0));const board=await page.locator('#board').boundingBox();
+ const handle=await page.locator('[data-drag]').first().boundingBox();
+ await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);await page.mouse.down();await page.mouse.move(board.x+board.width*.2,board.y+board.height*.35,{steps:12});await page.mouse.up();
+ assert(await page.evaluate(()=>placed(project.positions[0])),'tray drag');
+ const circle=await page.locator('#board .node circle').first().boundingBox();
+ await page.mouse.move(circle.x+circle.width/2,circle.y+circle.height/2);await page.mouse.down();await page.mouse.move(board.x+board.width*.3,board.y+board.height*.4,{steps:10});await page.mouse.up();
+ assert(Math.abs(await page.evaluate(()=>project.positions[0].x)-.3)<.02,'direct drag');
+ await page.locator('[data-place]').nth(1).click();await page.locator('#board').click({position:{x:board.width*.7,y:board.height*.6}});
+ assert.equal(await page.locator('#board .node').count(),2);
+ await page.waitForTimeout(400);await page.locator('#board .node circle').first().dblclick();
+ assert.equal(await page.locator('[data-name]').first().evaluate(e=>e===document.activeElement),true,'double-click rename');
+ await page.keyboard.insertText('Materiallager');await page.keyboard.press('Enter');
+ await page.locator('#addToList').click();await page.locator('[data-name]').last().fill('Extra');await page.locator('[data-delete]').last().click();
+ assert.equal(await page.evaluate(()=>project.positions.length),2);
+ // Same Excel file round-trips into the workstep parser's expected header/worksheet shape.
+ let downloaded=page.waitForEvent('download');await page.locator('#savePositions').click();let file=await downloaded;await file.saveAs(path.join(out,'positions.xlsx'));
+ const exported=await page.evaluate(()=>{let found;window._oldDownload=download;download=(b,m,n)=>{found=Array.from(new Uint8Array(b))};$('savePositions').click();download=window._oldDownload;return found});
+ const back=await page.evaluate(data=>{const wb=XLSX.read(new Uint8Array(data),{type:'array'});return XLSX.utils.sheet_to_json(wb.Sheets.Tabell1,{header:1})},exported);
+ assert.deepEqual(back,[['Steg','Moment'],[1,'Materiallager'],[2,'Kontroll']]);
+ await page.locator('#applyScale').click();await page.locator('#targetMinutes').fill('30');
+ await page.screenshot({path:path.join(out,'desktop-setup.png'),fullPage:true});
+ // Deterministic wall-clock timer; movement time excludes work and pause time.
+ await page.evaluate(()=>{window.testNow=Date.now();Date.now=()=>window.testNow});
+ await page.locator('#start').click();await page.locator('[data-station]').first().click();
+ await page.evaluate(()=>testNow+=10000);await page.locator('#walk').click();await page.evaluate(()=>testNow+=5000);
+ await page.locator('#pause').click();await page.evaluate(()=>testNow+=60000);assert.equal(await page.evaluate(()=>elapsed()),15000);
+ await page.locator('#start').click();await page.evaluate(()=>testNow+=3000);await page.locator('[data-station]').nth(1).click();
+ assert.equal(await page.evaluate(()=>legs()[0].b.walkMs),8000);
+ assert.equal(await page.locator('[data-name]').count(),0,'layout locked while observing');
+ const positionBefore=await page.evaluate(()=>project.positions[0].x);
+ await page.locator('#board').dispatchEvent('pointerdown',{clientX:40,clientY:40,pointerId:9,button:0});
+ assert.equal(await page.evaluate(()=>project.positions[0].x),positionBefore);
+ await page.evaluate(()=>testNow+=2000);await page.locator('[data-station]').first().click();assert.equal(await page.evaluate(()=>summary().walkKind),'mixed');
+ await page.locator('#stop').click();assert.equal(await page.evaluate(()=>elapsed()),20000);assert.equal(await page.evaluate(()=>project.observedCycles),null);
+ assert.equal(await page.locator('#resultStats .stat').count(),6);
+ await page.locator('#observedCycles').fill('20');assert.equal(await page.locator('#resultStats .stat').count(),10);
+ await page.locator('[data-value="actual"]').first().fill('5,5');await page.locator('[data-value="actual"]').first().press('Tab');
+ await page.locator('[data-value="steps"]').first().fill('10');await page.locator('[data-value="steps"]').first().press('Tab');
+ assert.equal(await page.evaluate(()=>legs()[0].distance),5.5);assert.equal(await page.evaluate(()=>legs()[0].steps),10);
+ await page.locator('[data-value="walkMs"]').nth(1).fill('4');await page.locator('[data-value="walkMs"]').nth(1).press('Tab');assert.equal(await page.evaluate(()=>summary().walkTime),12000);
+ assert.equal(await page.evaluate(()=>summary().share),60);
+ await page.screenshot({path:path.join(out,'desktop-results.png'),fullPage:true});
+ // Language coverage, PDF generation, CSV and JSON preserve results.
+ for(const l of ['sv','en','de']){
+  await page.evaluate(l=>chooseLanguage(l),l);
+  assert(await page.evaluate(()=>Object.keys(translations.en).every(k=>Object.hasOwn(translations[lang],k))));
+  assert.equal(await page.locator('html').getAttribute('lang'),l);
+  downloaded=page.waitForEvent('download');await page.locator('#print').click();file=await downloaded;await file.saveAs(path.join(out,'report-'+l+'.pdf'));assert((await fs.promises.stat(path.join(out,'report-'+l+'.pdf'))).size>10000);
+ }
+ downloaded=page.waitForEvent('download');await page.locator('#csv').click();file=await downloaded;await file.saveAs(path.join(out,'result.csv'));
+ downloaded=page.waitForEvent('download');await page.locator('#saveProject').click();file=await downloaded;await file.saveAs(path.join(out,'project.json'));
+ const saved=await page.evaluate(()=>localStorage.getItem('dometic-movements'));await page.reload();await page.waitForFunction(()=>project.session.status==='done');assert.equal(await page.evaluate(()=>project.observedCycles),20);
+ const migration=await page.evaluate(()=>{const p=structuredClone(project);p.version=1;p.completed=[1];delete p.walkingSpeed;delete p.observedCycles;delete p.targetMinutes;delete p.walkStart;delete p.positionSource;return validate(p)});
+ assert.equal(migration.version,2);assert.equal(migration.observedCycles,1);
+ assert(await page.evaluate(()=>{const p=structuredClone(project);p.positions[0].x=3;try{validate(p);return false}catch{return true}}));
+ // Route bends use the aisle path, and unscaled observations don't invent distances.
+ await page.locator('#clearRoute').click();await page.evaluate(()=>{project.metresPerUnit=null;render()});await page.locator('#start').click();await page.locator('[data-station]').first().click();await page.locator('[data-station]').nth(1).click();assert.equal(await page.evaluate(()=>summary().distance),null);
+ await page.locator('#clearRoute').click();await page.evaluate(()=>{project.metresPerUnit=.01;project.height=600;project.positions[0].x=.1;project.positions[0].y=.1;project.positions[1].x=.4;project.positions[1].y=.5;render()});await page.locator('#start').click();
+ await page.evaluate(()=>{hitPosition(project.positions[0].id);addVisit({x:.4,y:.1,position:null,bend:1});hitPosition(project.positions[1].id)});
+ assert(Math.abs(await page.evaluate(()=>legs()[0].distance)-5.4)<1e-10);
+ // Mobile touch dragging plus tap-to-place fallback, with no horizontal overflow.
+ await page.locator('#clearRoute').click();await page.setViewportSize({width:390,height:844});await page.evaluate(()=>chooseLanguage('sv'));await page.screenshot({path:path.join(out,'mobile.png'),fullPage:true});
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile overflow');
+ await page.locator('#board').scrollIntoViewIfNeeded();const c=await page.locator('#board .node circle').first().boundingBox(),b=await page.locator('#board').boundingBox();
+ const cdp=await page.context().newCDPSession(page);
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:c.x+c.width/2,y:c.y+c.height/2}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:b.x+b.width*.3,y:b.y+b.height*.4}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ assert(Math.abs(await page.evaluate(()=>project.positions[0].x)-.3)<.03,'touch drag');
+ assert.deepEqual(errors,[],'no browser exceptions');
+ console.log('PASS: real Excel import/export, automatic rename, double-click, mouse/touch dragging, optional cycles, measured/mixed walking time, pause, persistence/migration, overrides, route bends, translations, CSV/JSON and PDFs.');
+ await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});

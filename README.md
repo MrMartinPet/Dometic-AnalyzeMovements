@@ -1,4 +1,4 @@
-# Dometic — Movements & Paths
+# Dometic — Analyze Movements
 
 Mobile-friendly operator movement observation and spaghetti diagrams in English, Swedish and German. The repository and public URL are unchanged.
 
@@ -9,6 +9,12 @@ Mobile-friendly operator movement observation and spaghetti diagrams in English,
 - Drag placed points directly before starting. Type in the list to rename immediately, or double-click a point. Add and delete positions directly from the list.
 - **Save list** exports an XLSX file that can also be opened in Worksteps & Times.
 - Enter actual layout dimensions, or upload a PNG/JPG/WebP plan and calibrate it using a known reference distance.
+
+## Draw a layout
+
+Use **Rectangle** and click two opposite corners. **Connected line** continues from each click; finish with the button or Enter. **Snap** joins existing corners and endpoints and aligns horizontal/vertical segments. **Area name** places a text label. Rename any object directly in the list, or double-click it to focus its name. Undo the latest segment/object, or delete objects from the list. Image upload remains available and drawings can be layered over it.
+
+Drawings save immediately on this device and are included in project JSON, SVG and PDF. Layout editing is locked during observation. Older projects open with an empty drawing layer.
 
 ## Observe
 
@@ -40,3 +46,5 @@ Static HTML/CSS/JavaScript on GitHub Pages. XLSX 0.18.5 and jsPDF 2.5.1 are load
 The browser regression suite requires Playwright and Chromium, with the app served at localhost:8076. Run `node tests/app.test.cjs` with Playwright on `NODE_PATH`. Optional environment variables: `APP_URL`, `CHROME_PATH`, `STEP_FILE`, `QA_OUTPUT`, `QA_LIBS`. The latter can point to local copies of the two CDN scripts for deterministic offline tests. Outputs should be stored outside the published repository.
 
 Checks cover actual list import/export, immediate naming, double-click, mouse/touch placement, timers/pauses, automatic estimated walking time, cycle totals, data migration, overrides, aisle bends, languages, PDF/CSV/JSON export and mobile overflow. PDF pages are also rendered and visually inspected.
+
+Run `node tests/layout.test.cjs` for drawing, snapping, naming, persistence, import validation, observation locking and export checks. It uses an intercepted local app URL, so no local server is needed.

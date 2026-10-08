@@ -18,11 +18,12 @@ The observation timer uses elapsed wall-clock time, including phone sleep, and e
 
 ### Walking time and steps
 
-- Steps are estimated from distance / step length unless counted steps are entered for a movement. There is no phone pedometer or GPS measurement.
-- For **measured walking time**, tap **Start walking** when the operator departs and tap the next position on arrival. Explicit pauses are excluded. Timing is optional and can also be entered in seconds in the movement log.
-- Trips without measured walking time use distance / configured walking speed. Cards and reports explicitly label measured, estimated or mixed walking time. Time between ordinary position taps is never assumed to be walking time.
-- If walking time exceeds observation time, no misleading percentage is shown; the app asks the observer to check inputs.
-- Distances follow the drawn path. Straight lines do not automatically avoid obstacles.
+- Calibrate the layout before starting. Tap only the position the operator arrives at; there are no departure or walking-time controls.
+- Walking time is always an estimate: calibrated path distance / configured walking speed. The default assumption is 1.2 m/s (about 0.83 s per metre), configurable for the observed process. Cards, logs, CSV and PDF explicitly identify the estimate. Old manually timed walks are ignored when estimating current results.
+- Steps are estimated from distance / step length unless counted steps are entered afterwards. There is no phone pedometer or GPS measurement.
+- If estimated walking time exceeds observation time, no misleading percentage is shown; check the calibration and speed.
+- Distances follow the drawn path, including aisle bends. Straight lines do not automatically avoid obstacles.
+- The language popup appears on every opening, with the previous language preselected.
 
 ## Results and exports
 
@@ -38,4 +39,4 @@ Static HTML/CSS/JavaScript on GitHub Pages. XLSX 0.18.5 and jsPDF 2.5.1 are load
 
 The browser regression suite requires Playwright and Chromium, with the app served at localhost:8076. Run `node tests/app.test.cjs` with Playwright on `NODE_PATH`. Optional environment variables: `APP_URL`, `CHROME_PATH`, `STEP_FILE`, `QA_OUTPUT`, `QA_LIBS`. The latter can point to local copies of the two CDN scripts for deterministic offline tests. Outputs should be stored outside the published repository.
 
-Checks cover actual list import/export, immediate naming, double-click, mouse/touch placement, timers/pauses, measured vs estimated walking time, cycle totals, data migration, overrides, aisle bends, languages, PDF/CSV/JSON export and mobile overflow. PDF pages are also rendered and visually inspected.
+Checks cover actual list import/export, immediate naming, double-click, mouse/touch placement, timers/pauses, automatic estimated walking time, cycle totals, data migration, overrides, aisle bends, languages, PDF/CSV/JSON export and mobile overflow. PDF pages are also rendered and visually inspected.

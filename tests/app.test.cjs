@@ -11,7 +11,7 @@ const url=process.env.APP_URL||'http://localhost:8076/';
  page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
  for(const name of ['xlsx.full.min.js','jspdf.umd.min.js'])if(fs.existsSync(path.join(libs,name)))await page.route('**/'+name,r=>r.fulfill({path:path.join(libs,name),contentType:'text/javascript'}));
  await page.goto(url+'?lang=sv');await page.waitForFunction(()=>typeof summary==='function');
- assert.deepEqual(errors,[],'boot');assert.equal(await page.locator('#nextCycle').count(),0);
+ await page.locator('[data-language="sv"]').click();assert.deepEqual(errors,[],'boot');assert.equal(await page.locator('#nextCycle').count(),0);
  // Import the exact Moment-timer source when available, then verify the canonical format separately.
  const real=process.env.STEP_FILE;
  if(real){await page.locator('#positionsFile').setInputFiles(real);await page.waitForFunction(()=>project.positions.length>0);assert(await page.evaluate(()=>project.positions.every(p=>p.x===null&&p.y===null)));}
@@ -49,23 +49,22 @@ const url=process.env.APP_URL||'http://localhost:8076/';
  // Deterministic wall-clock timer; movement time excludes work and pause time.
  await page.evaluate(()=>{window.testNow=Date.now();Date.now=()=>window.testNow});
  await page.locator('#start').click();await page.locator('[data-station]').first().click();
- await page.evaluate(()=>testNow+=10000);await page.locator('#walk').click();await page.evaluate(()=>testNow+=5000);
+ await page.evaluate(()=>testNow+=15000);
  await page.locator('#pause').click();await page.evaluate(()=>testNow+=60000);assert.equal(await page.evaluate(()=>elapsed()),15000);
  await page.locator('#start').click();await page.evaluate(()=>testNow+=3000);await page.locator('[data-station]').nth(1).click();
- assert.equal(await page.evaluate(()=>legs()[0].b.walkMs),8000);
+ assert.equal(await page.locator('#walk').count(),0);assert(Math.abs(await page.evaluate(()=>summary().walkTime)-await page.evaluate(()=>summary().distance/project.walkingSpeed*1000))<1e-8);
  assert.equal(await page.locator('[data-name]').count(),0,'layout locked while observing');
  const positionBefore=await page.evaluate(()=>project.positions[0].x);
  await page.locator('#board').dispatchEvent('pointerdown',{clientX:40,clientY:40,pointerId:9,button:0});
  assert.equal(await page.evaluate(()=>project.positions[0].x),positionBefore);
- await page.evaluate(()=>testNow+=2000);await page.locator('[data-station]').first().click();assert.equal(await page.evaluate(()=>summary().walkKind),'mixed');
+ await page.evaluate(()=>testNow+=2000);await page.locator('[data-station]').first().click();assert.equal(await page.evaluate(()=>summary().walkKind),'estimated');
  await page.locator('#stop').click();assert.equal(await page.evaluate(()=>elapsed()),20000);assert.equal(await page.evaluate(()=>project.observedCycles),null);
  assert.equal(await page.locator('#resultStats .stat').count(),6);
  await page.locator('#observedCycles').fill('20');assert.equal(await page.locator('#resultStats .stat').count(),10);
  await page.locator('[data-value="actual"]').first().fill('5,5');await page.locator('[data-value="actual"]').first().press('Tab');
  await page.locator('[data-value="steps"]').first().fill('10');await page.locator('[data-value="steps"]').first().press('Tab');
  assert.equal(await page.evaluate(()=>legs()[0].distance),5.5);assert.equal(await page.evaluate(()=>legs()[0].steps),10);
- await page.locator('[data-value="walkMs"]').nth(1).fill('4');await page.locator('[data-value="walkMs"]').nth(1).press('Tab');assert.equal(await page.evaluate(()=>summary().walkTime),12000);
- assert.equal(await page.evaluate(()=>summary().share),60);
+ assert(Math.abs(await page.evaluate(()=>summary().walkTime)-await page.evaluate(()=>summary().distance/project.walkingSpeed*1000))<1e-8);
  await page.screenshot({path:path.join(out,'desktop-results.png'),fullPage:true});
  // Language coverage, PDF generation, CSV and JSON preserve results.
  for(const l of ['sv','en','de']){
@@ -76,12 +75,11 @@ const url=process.env.APP_URL||'http://localhost:8076/';
  }
  downloaded=page.waitForEvent('download');await page.locator('#csv').click();file=await downloaded;await file.saveAs(path.join(out,'result.csv'));
  downloaded=page.waitForEvent('download');await page.locator('#saveProject').click();file=await downloaded;await file.saveAs(path.join(out,'project.json'));
- const saved=await page.evaluate(()=>localStorage.getItem('dometic-movements'));await page.reload();await page.waitForFunction(()=>project.session.status==='done');assert.equal(await page.evaluate(()=>project.observedCycles),20);
+ const saved=await page.evaluate(()=>localStorage.getItem('dometic-movements'));await page.reload();await page.waitForFunction(()=>project.session.status==='done');await page.locator('[data-language="sv"]').click();assert.equal(await page.evaluate(()=>project.observedCycles),20);
  const migration=await page.evaluate(()=>{const p=structuredClone(project);p.version=1;p.completed=[1];delete p.walkingSpeed;delete p.observedCycles;delete p.targetMinutes;delete p.walkStart;delete p.positionSource;return validate(p)});
  assert.equal(migration.version,2);assert.equal(migration.observedCycles,1);
  assert(await page.evaluate(()=>{const p=structuredClone(project);p.positions[0].x=3;try{validate(p);return false}catch{return true}}));
  // Route bends use the aisle path, and unscaled observations don't invent distances.
- await page.locator('#clearRoute').click();await page.evaluate(()=>{project.metresPerUnit=null;render()});await page.locator('#start').click();await page.locator('[data-station]').first().click();await page.locator('[data-station]').nth(1).click();assert.equal(await page.evaluate(()=>summary().distance),null);
  await page.locator('#clearRoute').click();await page.evaluate(()=>{project.metresPerUnit=.01;project.height=600;project.positions[0].x=.1;project.positions[0].y=.1;project.positions[1].x=.4;project.positions[1].y=.5;render()});await page.locator('#start').click();
  await page.evaluate(()=>{hitPosition(project.positions[0].id);addVisit({x:.4,y:.1,position:null,bend:1});hitPosition(project.positions[1].id)});
  assert(Math.abs(await page.evaluate(()=>legs()[0].distance)-5.4)<1e-10);
@@ -95,6 +93,6 @@ const url=process.env.APP_URL||'http://localhost:8076/';
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  assert(Math.abs(await page.evaluate(()=>project.positions[0].x)-.3)<.03,'touch drag');
  assert.deepEqual(errors,[],'no browser exceptions');
- console.log('PASS: real Excel import/export, automatic rename, double-click, mouse/touch dragging, optional cycles, measured/mixed walking time, pause, persistence/migration, overrides, route bends, translations, CSV/JSON and PDFs.');
+ console.log('PASS: real Excel import/export, automatic rename, double-click, mouse/touch dragging, optional cycles, automatic estimated walking time, pause, persistence/migration, overrides, route bends, translations, CSV/JSON and PDFs.');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});

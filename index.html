@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1020"><title>Movements & Paths | Dometic</title>
-<link rel="stylesheet" href="styles.css?v=2"></head><body>
-<div class="language-screen" id="languageScreen"><div class="language-card"><div class="brand">DOMETIC</div><div class="eyebrow" style="margin-top:12px">PROCESS OBSERVATIONS</div><h1>Choose language</h1><p>Välj språk · Sprache wählen</p><div class="languages" id="languages"></div></div></div>
+<link rel="stylesheet" href="styles.css?v=3"></head><body>
+<div class="language-screen" id="languageScreen" role="dialog" aria-modal="true" aria-labelledby="languageTitle"><div class="language-card"><div class="brand">DOMETIC</div><div class="eyebrow" style="margin-top:12px">PROCESS OBSERVATIONS</div><h1 id="languageTitle">Choose language</h1><p>Välj språk · Sprache wählen</p><div class="languages" id="languages"></div></div></div>
 <main class="app"><header class="top"><div class="brand">DOMETIC</div><div><div class="appname" data-t="app">Movements & Paths</div><div class="subtitle" data-t="tagline"></div></div><div class="spacer"></div><a href="https://mrmartinpet.github.io/Dometic/" data-t="portal"></a><button class="langbutton no-print" id="languageButton"></button></header>
 <div id="message" class="message" role="alert" hidden></div>
 <section class="panel setup"><label class="field"><span data-t="workstation"></span><input id="workstation" maxlength="120" data-ph="stationPlaceholder"></label><label class="field"><span data-t="observer"></span><input id="observer" maxlength="100"></label><label class="field"><span data-t="date"></span><input id="date" type="date"><span id="printDate" class="print-only" style="margin-top:5px;color:var(--ink)"></span></label></section>
@@ -16,7 +16,7 @@
 <div class="workspace"><section class="panel map-panel"><div class="map-head"><div><div class="eyebrow" data-t="diagram"></div><h2 data-t="mapTitle"></h2></div><div style="text-align:right"><div class="timer" id="timer">00:00</div><div class="status" id="status"></div><div class="status" id="targetStatus"></div></div></div>
 <div class="tools no-print"><button id="addPosition" data-t="add"></button><button id="loadImage" data-t="background"></button><button id="calibrate" data-t="calibrate"></button><button id="bend" data-t="bend"></button></div>
 <div class="board-wrap"><svg id="board" class="board" viewBox="0 0 1000 600" role="group" aria-label="Spaghetti diagram"></svg></div><div id="hint" class="hint"></div>
-<div class="measure-bar no-print"><button id="start" class="primary"></button><button id="pause" data-t="pause"></button><button id="walk" data-t="walkStart"></button><button id="stop" data-t="stop"></button><button id="undo" data-t="undo"></button></div></section>
+<div class="measure-bar no-print"><button id="start" class="primary"></button><button id="pause" data-t="pause"></button><button id="stop" data-t="stop"></button><button id="undo" data-t="undo"></button></div></section>
 <aside class="side no-print"><section class="panel compact positions-panel">
 <div class="section-title"><h2 data-t="positions"></h2><span id="positionCount" class="badge">0</span></div>
 <div class="list-actions"><button id="loadPositions" data-t="loadPositions"></button><button id="savePositions" data-t="savePositions"></button><button id="addToList" data-t="add"></button></div>
@@ -38,5 +38,5 @@
 </main><input id="positionsFile" type="file" accept=".xlsx,.xls,.csv,.tsv" hidden><input id="imageFile" type="file" accept="image/png,image/jpeg,image/webp" hidden><input id="projectFile" type="file" accept=".json,application/json" hidden>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
-<script src="app.js?v=2" defer></script></body></html>
+<script src="app.js?v=3" defer></script></body></html>
 

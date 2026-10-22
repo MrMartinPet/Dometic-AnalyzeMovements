@@ -39,6 +39,10 @@ PDF export uses the A4 landscape standard of 20 Cycle Check and Worksteps & Time
 
 Data is stored in the browser. Export a JSON project to back up or transfer it. Older version 1 projects are migrated without discarding visits. Imported running projects resume paused.
 
+### Estimate a full shift
+
+After finishing, enter **Observed cycles** for the recorded observation and **Estimated cycles per shift** for the expected shift volume. A separate result section estimates shift walking time, distance, steps and movements as `observed total / observed cycles × estimated shift cycles`. Walking time uses the configured walking speed, not the observation duration. The estimate assumes the observed walking pattern is representative; it does not include unobserved routes or infer shift length. A blank count shows unavailable results; zero expected cycles gives zero. Invalid counts are rejected and clear the previous estimate. Values are saved on this device and in project JSON, CSV and PDF. Older projects open without a shift estimate.
+
 ## Hosting and checks
 
 Static HTML/CSS/JavaScript on GitHub Pages. XLSX 0.18.5 and jsPDF 2.5.1 are loaded from jsDelivr, matching the existing companion apps.

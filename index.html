@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1020"><title>Analyze Movements | Dometic</title>
-<link rel="stylesheet" href="styles.css?v=4"></head><body>
+<link rel="stylesheet" href="styles.css?v=5"></head><body>
 <div class="language-screen" id="languageScreen" role="dialog" aria-modal="true" aria-labelledby="languageTitle"><div class="language-card"><div class="brand">DOMETIC</div><div class="eyebrow" style="margin-top:12px">PROCESS OBSERVATIONS</div><h1 id="languageTitle">Choose language</h1><p>Välj språk · Sprache wählen</p><div class="languages" id="languages"></div></div></div>
 <main class="app"><header class="top"><div class="brand">DOMETIC</div><div><div class="appname" data-t="app">Analyze Movements</div><div class="subtitle" data-t="tagline"></div></div><div class="spacer"></div><a href="https://mrmartinpet.github.io/Dometic/" data-t="portal"></a><button class="langbutton no-print" id="languageButton"></button></header>
 <div id="message" class="message" role="alert" hidden></div>
@@ -33,6 +33,7 @@
 <section class="panel results" id="results" hidden>
 <div class="section-title"><div><div class="eyebrow" data-t="completedAnalysis"></div><h2 data-t="results"></h2></div><label class="field cycle-input"><span data-t="observedCycles"></span><input id="observedCycles" type="text" inputmode="numeric" placeholder="20"><small data-t="cycleHelp"></small></label></div>
 <div class="stats secondary-stats" id="resultStats"></div>
+<section class="shift-estimate" aria-labelledby="shiftEstimateTitle"><div class="section-title"><h3 id="shiftEstimateTitle" data-t="shiftEstimate"></h3><label class="field cycle-input"><span data-t="estimatedShiftCycles"></span><input id="estimatedShiftCycles" type="text" inputmode="numeric" placeholder="200" aria-describedby="shiftCyclesHelp"><small id="shiftCyclesHelp" data-t="shiftCyclesHelp"></small></label></div><div class="stats secondary-stats" id="shiftStats" aria-live="polite"></div><p class="muted" id="shiftEstimateNote"></p></section>
 <div class="result-tables"><div><h3 data-t="topRoutes"></h3><div id="routeSummary"></div></div><div><h3 data-t="visitsByPosition"></h3><div id="positionSummary"></div></div></div>
 </section><p class="legend-note" data-t="distanceMethod"></p><div class="print-only print-info" id="printInfo"></div>
 <div class="exports no-print"><button class="primary" id="print" data-t="pdf"></button><button id="csv" data-t="csv"></button><button id="svgExport" data-t="svg"></button><button id="saveProject" data-t="saveProject"></button><button id="loadProject" data-t="loadProject"></button><span class="muted" id="saveStatus" style="align-self:center;margin-left:auto"></span></div>
@@ -40,5 +41,5 @@
 </main><input id="positionsFile" type="file" accept=".xlsx,.xls,.csv,.tsv" hidden><input id="imageFile" type="file" accept="image/png,image/jpeg,image/webp" hidden><input id="projectFile" type="file" accept=".json,application/json" hidden>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
-<script src="app.js?v=4" defer></script></body></html>
+<script src="app.js?v=5" defer></script></body></html>
 
